@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="正文测试 DIN \u200b DIN的核心思想就是Attention，论文里面把他叫做target-attention，理解起来也很简单，就是把推荐的cand">
+<title>用户兴趣建模</title>
+
+<link rel='canonical' href='https://19122882.github.io/kaze_blog/p/%E7%94%A8%E6%88%B7%E5%85%B4%E8%B6%A3%E5%BB%BA%E6%A8%A1/'>
+
+<link rel="stylesheet" href="/kaze_blog/scss/style.min.0304c6baf04e01a8fe70693791cb744d56a3578a3120a8796cefc66825aa39c7.css"><meta property='og:title' content="用户兴趣建模">
+<meta property='og:description' content="正文测试 DIN \u200b DIN的核心思想就是Attention，论文里面把他叫做target-attention，理解起来也很简单，就是把推荐的cand">
+<meta property='og:url' content='https://19122882.github.io/kaze_blog/p/%E7%94%A8%E6%88%B7%E5%85%B4%E8%B6%A3%E5%BB%BA%E6%A8%A1/'>
+<meta property='og:site_name' content='Kaze&#39;s Blog'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2025-04-22T22:16:11&#43;08:00'/><meta property='article:modified_time' content='2025-04-22T22:16:11&#43;08:00'/>
+<meta name="twitter:title" content="用户兴趣建模">
+<meta name="twitter:description" content="正文测试 DIN \u200b DIN的核心思想就是Attention，论文里面把他叫做target-attention，理解起来也很简单，就是把推荐的cand">
+  
+
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/kaze_blog/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/kaze_blog/img/avatar2_hu17271780158451294606.png" width="300"
+                            height="298" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍁</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/kaze_blog">Kaze&#39;s Blog</a></h1>
+            <h2 class="site-description">记录学习生活</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://space.bilibili.com/65445253'
+                        target="_blank"
+                        title="Bilibili"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-bilibili"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 10a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v6a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4v-6z" /><path d="M8 3l2 3" /><path d="M16 3l-2 3" /><path d="M9 13v-2" /><path d="M15 11v2" /></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://github.com/19122882'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/kaze_blog/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/kaze_blog/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/kaze_blog/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/kaze_blog/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/kaze_blog/%E9%93%BE%E6%8E%A5/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>链接</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#正文测试">正文测试</a></li>
+    <li><a href="#din">DIN</a></li>
+    <li><a href="#dien">DIEN</a></li>
+    <li><a href="#bst">BST</a></li>
+    <li><a href="#disn">DISN</a></li>
+    <li><a href="#sim">SIM</a></li>
+    <li><a href="#epa">EPA</a></li>
+    <li><a href="#dsim">DSIM</a></li>
+    <li><a href="#引用">引用</a></li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/kaze_blog/p/%E7%94%A8%E6%88%B7%E5%85%B4%E8%B6%A3%E5%BB%BA%E6%A8%A1/">用户兴趣建模</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2025-04-22</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 5 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="正文测试">正文测试
+</h2><h2 id="din">DIN
+</h2><p>​	DIN的核心思想就是Attention，论文里面把他叫做target-attention，理解起来也很简单，就是把推荐的candidate item embed作为key，（短期的）行为序列中的所有item的embed作为key和value，计算一个加权的相似度，以此得到一个新的hidden-state，这个东西同时融合了当前item和行为序列的信息，直接过MLP就能用了。</p>
+<p>传统的Attention机制中，给定两个item embedding，比如u和v，通常是直接做点积uv或者uWv，其中W是一个u × v的权重矩阵，但这篇paper中阿里显然做了更进一步的改进，<strong>首先是把u和v以及u v的element wise差值向量合并起来作为输入，然后喂给全连接层，最后得出权重</strong>，这样的方法显然损失的信息更少。但如果你自己想方便的引入attention机制的话，不妨先从点积的方法做起尝试一下，因为这样连训练都不用训练。我个人理解：堆参数！</p>
+<p><img src="https://pica.zhimg.com/v2-38c1be7f42f396c9fce8264360f4b7c0_1440w.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
+<p>这张图里DIN是用外积，王喆说是用u、v的diff，可见形式确实是多样的。</p>
+<p>此外我在和SOUL的小伙伴讨论的时候有一个疑问：为什么不加位置编码呢？按理说用户的序列顺序&amp;交互时间也是一个重要的参数，DIEN不就是解决这个的吗？后来我有猜测：</p>
+<ol>
+<li>大概可能是当时位置编码还不流行吧，毕竟DIN和Transformer是同年的东西，不了解也正常，后来的DISN和SIM都加了位置编码。</li>
+<li>可能是物品的embed里面本身就带了创建时间，这也是合情合理的。</li>
+</ol>
+<h2 id="dien">DIEN
+</h2><p>​	这篇文章的核心就是对<strong>用户的兴趣的演化</strong>进行建模，模型的思想和DIN差不多，虽然我感觉是堆参数导致的，但是有一些trick可以借鉴一下。</p>
+<p><img src="https://pica.zhimg.com/v2-488922fa26167c8c1d151c17dde0f72a_r.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
+<p>DIN用的是Attention，而在这里用的两层GRU，第一层GRU叫做<strong>兴趣提取层</strong>，用LSTM提取用户的兴趣，t时刻的隐状态h(t)包含了t时刻之前的信息，很自然；上面那一层叫<strong>兴趣演化层</strong>，有这么一个思想：用户对于不同item的兴趣有不同的演化路线，他应该是跳跃的，比如用户昨天看了很多游戏视频，前天看了一堆动物视频，那么今天推送动物视频的时候，应该跳过一些游戏视频的历史记录，所以兴趣演化层就用带Attention的GRU对h(t)进行更新。那么从Attention的角度看来，传统的DIN其实对应的是DIEN的<strong>兴趣演化层</strong>，这个思想我认为和后来的DISN、SIM很类似。</p>
+<p>这里有一个trick，就是为了稳定学习，他加入了一个损失函数，使得item的embed e(t)其实是和hidden-state h(t)在同一个参数空间内。如果在一个参数空间内，e 和 h 是可以计算相似度的话，可以方便学习，我们可以训练两个任务：</p>
+<ol>
+<li>给定用户序列，预测当前物品的点击率，这是主任务。</li>
+<li>给定用户序列的前n-1位，预测用户序列的第n位，这个是辅助任务。</li>
+</ol>
+<p>这么做不仅训练样本是无穷无尽的，还能强制让item的embed e(t)其实是和hidden-state h(t)以及过attention（过兴趣演化层）的h&rsquo;(t)在同一个参数空间内，可解释性更好：通过这个辅助的loss，让隐状态开始富有语义：<strong>点击与否能具体的归因到某一个时刻的状态上</strong>。</p>
+<p>缺点：两个GRU有点太慢了，不能并行，还得算两层QAQ。</p>
+<h2 id="bst">BST
+</h2><p>BST(Behavior Sequence Transformer)，使用Transformer捕捉用户历史行为序列信息，评价：没活。</p>
+<p><img src="https://pic3.zhimg.com/v2-89a823cfcbf2c2919cbab9d234492c90_1440w.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
+<h2 id="disn">DISN
+</h2><p>DISN的一个假设前提，或者说他们观察到的现象就是：<strong>用户的行为呈现主题分布，相同Session用户行为是接近的，不同Session间的用户行为有差异</strong>，他的架构图也很好理解，其实就是DISN的强化版本，加了个<strong>Session划分层</strong>来给item加入Session的标签，感觉用java可以实现，<strong>兴趣抽取层</strong>用transformer代替，又回归DIN了，兴趣演化层和激活层都没啥活。</p>
+<p>DSIN基于Session的假设并不适合所有场景，对于不满足Session内在结构的场景，使用DSIN不一定有效果，这也强调了模型和业务相结合的重要性。举个例子：DISN的有效性来自于淘宝用户的粘性足够高，能够捕捉到不同Session的兴趣偏好，假如淘宝是一个小众平台，一个用户只在上面买电子产品，就很难建模不同Session的差异；再举个例子：新闻推荐要求多样性，每一个Session用户内部多样，但是不同Session同质性很高，这时候用Session就完全没效果了。</p>
+<p><img src="https://pic2.zhimg.com/v2-7eb4568a15f6dd7dc71bd9c6d776cae7_r.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
+<h2 id="sim">SIM
+</h2><p>SIM可以用于超长序列建模，他的思想和DISN如出一辙：挑选有用的Session（item），很朴素很有效的想法。这也是两个阶段的处理：从超长的序列（比如10000个）里面找出用户可能感兴趣的物品（比如100个），然后把这100个物品，<strong>加上时间编码</strong>后构成一个新的序列，然后做DIN。第二阶段很常规，第一阶段可以说道一下。</p>
+<p>GSU主要包含两种方案，分别是hard-search和soft-search。hard-search是根据目标广告的类别来检索相同类别的行为，soft-search是根据目标广告Embedding和行为Embedding内积大小来进行检索。</p>
+<p>给定用户行为 B=[b<del>1</del>,b<del>2</del>,&hellip;,b<del>T</del>] ，其中 b<del>i</del> 代表了用户第 i 个行为， T 代表了行为长度。GSU对于每一个用户行为计算一个相关性得分 r<del>i</del> ，然后根据 r<del>i</del> 从原始行为中选出Top-K相关的行为构成新的子序列 <strong>B</strong> 。 r<del>t</del>的计算方式如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">r_t</span> <span class="o">=</span> <span class="n">TopK</span><span class="p">(</span><span class="n">Type</span><span class="p">(</span><span class="n">C_a</span><span class="p">)</span> <span class="o">==</span> <span class="n">Type</span><span class="p">(</span><span class="n">C_i</span><span class="p">))</span> <span class="c1"># Hard-Search</span>
+</span></span><span class="line"><span class="cl"><span class="n">r_t</span> <span class="o">=</span> <span class="n">TopK</span><span class="p">(</span><span class="n">W_a</span> <span class="o">*</span> <span class="n">C_a</span> <span class="o">*</span> <span class="n">W_i</span> <span class="o">*</span> <span class="n">C_i</span><span class="p">)</span>  <span class="c1"># Soft-Search</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>hard-search是无参数的，只有和候选广告类目相同的用户行为数据才会被选出送到下一阶段进行建模。公式中的 Ca 表示目标广告类别， Ci 表示第 i 个用户行为的类别。虽然hard-search是一种基于数据特性的比较直观的方案，但是它非常容易部署到实际工业界在线预估系统。在soft-search中，将用户行为序列 B 映射成Embedding表达 E=[e1,e2,&hellip;,eT] ， Wb 和 Wa 都是模型参数。其中 ea 代表了目标广告Embedding， ei 代表了第 i 个用户行为Embedding。</p>
+<p><img src="https://pic3.zhimg.com/v2-b4429d7689397380a787ae4c1a370358_1440w.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
+<h2 id="epa">EPA
+</h2><h2 id="dsim">DSIM
+</h2><h2 id="引用">引用
+</h2><blockquote>
+</blockquote>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI&#43;WdtXRGWt2kTvGFasHpSy3SV"crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG&#43;vnGctmUb0ZY0l8"crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"integrity="sha384-&#43;VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4&#43;/RRE05"crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script>
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2024 - 
+        
+        2025 Kaze
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.26.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/kaze_blog/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
